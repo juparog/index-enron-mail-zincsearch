@@ -1,0 +1,17 @@
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+
+# Go files
+[*.go]
+indent_style = space
+indent_size = 2
+
+# Test data
+[/test/{*.json,*.csv}]
+end_of_line = false
