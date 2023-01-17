@@ -42,7 +42,7 @@ func ProcessFile(inputParams InputParams, done chan<- bool) {
 	logger.Info.Println("⚒ Starting processing")
 	startTime := time.Now()
 
-	utils.CheckError(utils.CheckIfValidFile(*inputParams.InputPath))
+	utils.CheckError(utils.CheckFileExist(*inputParams.InputPath))
 
 	file, err := os.Open(*inputParams.InputPath)
 	utils.CheckError(err)
@@ -161,14 +161,15 @@ func processLine(line *string, separator *string, defaultF *string, fieldsMap *m
 }
 
 func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) {
-	fmt.Println("Writing files...")
+	logger.Info.Println("Writing files...")
 
 	writeBasePath := utils.GetBasePath(*inputParams.InputPath)
 	fileName := utils.GetNewFileName(*inputParams.InputPath)
 	fileExt := utils.GetExtension(*inputParams.Format)
 	partCounter := 1
 	filesUploading := 0
-	writeStringFunc := createStringWriter(filepath.Join(writeBasePath, fmt.Sprint(fileName, "-Part-", partCounter, fileExt)))
+	tmpFilepath := filepath.Join(writeBasePath, fmt.Sprint(fileName, "-Part-", partCounter, fileExt))
+	writeStringFunc := createStringWriter(tmpFilepath)
 	jsonFunc := utils.GetJSONFunc(*inputParams.Format)
 
 	if *inputParams.IndexName == "" {
@@ -187,8 +188,9 @@ func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) 
 		if more {
 			if currentSize > MAX_SIZE_PER_FILE {
 				writeStringFunc(afterIdxStr, true)
+				logger.Info.Printf("write complete: %s", tmpFilepath)
 
-				go uploadFile(filepath.Join(writeBasePath, fmt.Sprint(fileName, "-Part-", partCounter, fileExt)), inputParams, &filesUploading)
+				go uploadFile(tmpFilepath, inputParams, &filesUploading)
 
 				for {
 					if (filesUploading * MAX_SIZE_PER_FILE) <= MAX_DISK_CAPACITY {
@@ -198,7 +200,8 @@ func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) 
 				}
 
 				partCounter += 1
-				writeStringFunc = createStringWriter(filepath.Join(writeBasePath, fmt.Sprint(fileName, "-", partCounter, fileExt)))
+				tmpFilepath = filepath.Join(writeBasePath, fmt.Sprint(fileName, "-", partCounter, fileExt))
+				writeStringFunc = createStringWriter(tmpFilepath)
 				writeStringFunc(beforeIdxStr, false)
 			} else {
 				writeStringFunc(middleIdxStr, false)
@@ -209,13 +212,17 @@ func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) 
 	}
 
 	writeStringFunc(afterIdxStr, true)
-	logger.Info.Println("writing completed.")
+	logger.Info.Printf("write complete: %s", tmpFilepath)
+
+	go uploadFile(tmpFilepath, inputParams, &filesUploading)
+
+	logger.Info.Println("Writing completed.")
 }
 
 func createStringWriter(filePath string) func(string, bool) int64 {
 	file, err := os.Create(filePath)
 	utils.CheckError(err)
-	fmt.Printf("writing '%s' file \n", filePath)
+	logger.Debug.Printf("File created: %s\n", filePath)
 
 	return func(data string, close bool) int64 {
 		_, err := file.WriteString(data)
@@ -223,7 +230,7 @@ func createStringWriter(filePath string) func(string, bool) int64 {
 
 		if close {
 			file.Close()
-			fmt.Printf("File closed: %s\n", filePath)
+			logger.Debug.Printf("File closed: %s\n", filePath)
 			return 0
 		}
 
@@ -244,7 +251,7 @@ func uploadFile(filepath string, inputParams InputParams, filesUploading *int) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(file)
 
-	fmt.Printf("Uploading file: %s\n", filepath)
+	logger.Info.Printf("Uploading: %s\n", filepath)
 	targetUrl := *inputParams.UrlZinc + utils.GetUploadEndpoint(*inputParams.Format)
 	req, err := http.NewRequest("POST", targetUrl, buf)
 	utils.CheckError(err)
@@ -262,7 +269,9 @@ func uploadFile(filepath string, inputParams InputParams, filesUploading *int) {
 		utils.CheckError(fmt.Errorf("Error uploading file %s, api response with status code %d, response: %s\n", filepath, res.StatusCode, string(body)))
 	}
 
-	fmt.Printf("File upload complete: %s, response: %s\n", filepath, string(body))
+	logger.Info.Printf("Upload complete: %s", filepath)
+	logger.Info.Printf(", response: %s", string(body))
+	logger.Info.Panicln("")
 
 	*filesUploading -= 1
 
