@@ -18,3 +18,6 @@ build/*
 # vendor/
 test/*
 !test/enron_mail.tgz
+
+# editor vscode
+.vscode/*

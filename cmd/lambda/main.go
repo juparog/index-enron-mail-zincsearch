@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	idxenrontgz "github.com/WitsoftGroup/index-enron-mail-zincsearch/pkg/index/enrontgz"
@@ -47,7 +47,7 @@ func HandleRequest(ctx context.Context, events events.S3Event) (string, error) {
 	bucketKey := events.Records[0].S3.Object.Key
 	logger.Info.Println("Bucket name:", bucketName, ", bucket key:", bucketKey)
 
-	tmpfile, err := ioutil.TempFile("", bucketKey)
+	tmpfile, err := os.Create(filepath.Join(os.TempDir(), bucketKey))
 	utils.CheckError(err)
 	tmpFilepath := tmpfile.Name()
 	defer os.Remove(tmpFilepath)

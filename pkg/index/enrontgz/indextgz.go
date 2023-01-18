@@ -65,9 +65,9 @@ func ProcessFile(inputParams InputParams, done chan<- bool) {
 		internalFilepath := header.Name
 		switch header.Typeflag {
 		case tar.TypeDir: // = directory
-			logger.Debug.Println("Directory:", internalFilepath)
+			// logger.Debug.Println("Directory:", internalFilepath)
 		case tar.TypeReg: // = regular file
-			logger.Debug.Println("Regular file:", internalFilepath)
+			// logger.Debug.Println("Regular file:", internalFilepath)
 
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(tr)
@@ -269,9 +269,7 @@ func uploadFile(filepath string, inputParams InputParams, filesUploading *int) {
 		utils.CheckError(fmt.Errorf("Error uploading file %s, api response with status code %d, response: %s\n", filepath, res.StatusCode, string(body)))
 	}
 
-	logger.Info.Printf("Upload complete: %s", filepath)
-	logger.Info.Printf(", response: %s", string(body))
-	logger.Info.Panicln("")
+	logger.Info.Printf("Upload complete: %s, response: %s", filepath, string(body))
 
 	*filesUploading -= 1
 
