@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	idxenrontgz "github.com/WitsoftGroup/index-enron-mail-zincsearch/pkg/index/enrontgz"
+	idxtypes "github.com/WitsoftGroup/index-enron-mail-zincsearch/pkg/index/types"
 	"github.com/WitsoftGroup/index-enron-mail-zincsearch/pkg/logger"
 	"github.com/WitsoftGroup/index-enron-mail-zincsearch/pkg/utils"
 
@@ -21,14 +21,13 @@ import (
 
 func getInputParams() idxenrontgz.InputParams {
 
-	fields := os.Getenv("IDX_ENRONTGZ_FIELDS")
-	format := utils.IfThenElse(len(os.Getenv("IDX_ENRONTGZ_FORMAT")) > 0, os.Getenv("IDX_ENRONTGZ_FORMAT"), "bulk")
-	indexName := os.Getenv("IDX_ENRONTGZ_IDXNAME")
-	separator := os.Getenv("IDX_ENRONTGZ_SEPARATOR")
-	terminator := os.Getenv("IDX_ENRONTGZ_TERMINATOR")
-	tokenZinc := os.Getenv("IDX_ENRONTGZ_TOKENZINC")
-	urlZinc := os.Getenv("IDX_ENRONTGZ_URLZINC")
-	verbosity, _ := strconv.ParseBool(utils.IfThenElse(os.Getenv("IDX_ENRONTGZ_VERBOSITY") == "true", "true", "false"))
+	fields := os.Getenv(idxtypes.ENV_FIELDS)
+	format := utils.IfThenElse(len(os.Getenv(idxtypes.ENV_FORMAT)) > 0, os.Getenv(idxtypes.ENV_FORMAT), "bulk")
+	indexName := os.Getenv(idxtypes.ENV_IDXNAME)
+	separator := os.Getenv(idxtypes.ENV_SEPARATOR)
+	terminator := os.Getenv(idxtypes.ENV_TERMINATOR)
+	tokenZinc := os.Getenv(idxtypes.ENV_TOKENZINC)
+	urlZinc := os.Getenv(idxtypes.ZINC_URL)
 
 	return idxenrontgz.InputParams{
 		Fields:     &fields,
@@ -38,7 +37,6 @@ func getInputParams() idxenrontgz.InputParams {
 		Terminator: &terminator,
 		TokenZinc:  &tokenZinc,
 		UrlZinc:    &urlZinc,
-		Verbosity:  &verbosity,
 	}
 }
 

@@ -29,9 +29,8 @@ func main() {
 	indexName := flag.String("index-name", "", "index name in ZinSearch.")
 	separator := flag.String("separator", ":", "character separating each field in a record.")
 	terminator := flag.String("terminator", "\r\n", "character separating each row in data.")
-	token := flag.String("token", "", fmt.Sprintf("authorization basic token for api ZincSearch."))
+	token := flag.String("token-zinc", "", fmt.Sprintf("authorization basic token for api ZincSearch. **required**"))
 	urlZinc := flag.String("url-zinc", "http://localhost:4080/api/", "ZincSearch url to index.")
-	verbosity := flag.Bool("verbosity", false, "verbosity log.")
 
 	flag.Parse()
 
@@ -54,7 +53,6 @@ func main() {
 		Terminator: terminator,
 		TokenZinc:  token,
 		UrlZinc:    urlZinc,
-		Verbosity:  verbosity,
 	}
 
 	done := make(chan bool)

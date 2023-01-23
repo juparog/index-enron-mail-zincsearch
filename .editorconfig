@@ -12,6 +12,11 @@ charset = utf-8
 indent_style = space
 indent_size = 2
 
+# Terraform files
+[*.tf]
+indent_style = space
+indent_size = 2
+
 # Test data
 [/test/{*.json,*.csv}]
 end_of_line = false

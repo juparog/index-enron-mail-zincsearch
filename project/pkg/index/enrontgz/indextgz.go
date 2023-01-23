@@ -35,7 +35,6 @@ type InputParams struct {
 	Terminator *string
 	TokenZinc  *string
 	UrlZinc    *string
-	Verbosity  *bool
 }
 
 func ProcessFile(inputParams InputParams, done chan<- bool) {
