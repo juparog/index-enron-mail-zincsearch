@@ -113,7 +113,8 @@
                 "s3:DeleteBucket",
                 "s3:GetBucketPolicy",
                 "s3:GetBucketAcl",
-                "s3:PutBucketAcl"
+                "s3:PutBucketAcl",
+                "s3:PutBucketNotification"
             ],
             "Resource": "*"
         },
@@ -126,7 +127,11 @@
                 "lambda:GetFunction",
                 "lambda:ListVersionsByFunction",
                 "lambda:ListFunctions",
-                "lambda:GetFunctionCodeSigningConfig"
+                "lambda:GetFunctionCodeSigningConfig",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:AddPermission",
+                "lambda:GetPolicy",
+                "lambda:RemovePermission"
             ],
             "Resource": "*"
         }

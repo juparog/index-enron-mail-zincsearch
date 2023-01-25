@@ -27,7 +27,7 @@ func getInputParams() idxenrontgz.InputParams {
 	separator := os.Getenv(idxtypes.ENV_SEPARATOR)
 	terminator := os.Getenv(idxtypes.ENV_TERMINATOR)
 	tokenZinc := os.Getenv(idxtypes.ENV_TOKENZINC)
-	urlZinc := os.Getenv(idxtypes.ZINC_URL)
+	urlZinc := os.Getenv(idxtypes.ENV_URLZINC)
 
 	return idxenrontgz.InputParams{
 		Fields:     &fields,
@@ -79,6 +79,8 @@ func HandleRequest(ctx context.Context, events events.S3Event) (string, error) {
 
 func main() {
 	logger.Info.Println("Lambda function started.")
+
 	lambda.Start(HandleRequest)
+
 	logger.Info.Println("Lambda function finished.")
 }

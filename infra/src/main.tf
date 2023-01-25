@@ -2,9 +2,6 @@
 
 ### local definitions ###
 locals {
-  # general
-  region = "us-east-1"
-
   # iam
   task_role_name   = "indexEcsTaskExecutionRole"
   lambda_role_name = "indexLambdaExecutionRole"
@@ -23,7 +20,7 @@ locals {
   lambda_bucket_name = "enron-mail-lambda"
 
   # Lambda
-  lambda_name    = "indezEronEmail"
+  lambda_name    = "indez-eron-email"
   lambda_runtime = "go1.x"
   lambda_handler = "main"
 }
@@ -60,7 +57,7 @@ module "iam" {
   })
 
   # variables
-  region_name  = local.region
+  region_name  = var.AWS_REGION
   role_name    = each.key
   identifiers  = each.value.identifiers
   arn_policies = each.value.arn_policies
@@ -74,7 +71,7 @@ module "network" {
   ]
 
   # variables
-  region_name = local.region
+  region_name = var.AWS_REGION
   lb_name     = local.lb_name
 }
 
@@ -96,7 +93,8 @@ module "ecs" {
   env_task = [
     { name = "ZINC_DATA_PATH", value = var.ZINC_DATA_PATH },
     { name = "ZINC_FIRST_ADMIN_USER", value = var.ZINC_FIRST_ADMIN_USER },
-    { name = "ZINC_FIRST_ADMIN_PASSWORD", value = var.ZINC_FIRST_ADMIN_PASSWORD }
+    { name = "ZINC_FIRST_ADMIN_PASSWORD", value = var.ZINC_FIRST_ADMIN_PASSWORD },
+    { name = "ZINC_MAX_DOCUMENT_SIZE", value = var.ZINC_MAX_DOCUMENT_SIZE }
   ]
 }
 #####################
@@ -128,17 +126,34 @@ resource "aws_lambda_function" "index_lambda_func" {
   runtime       = local.lambda_runtime
   environment {
     variables = {
-      "IDX_ENRONTGZ_URLZINC"   = module.network.lb_dns_name
-      "IDX_ENRONTGZ_TOKENZINC" = base64encode("${var.ZINC_FIRST_ADMIN_USER}:${var.ZINC_FIRST_ADMIN_PASSWORD}")
+      "IDX_ENRONTGZ_FIELDS"     = var.IDX_ENRONTGZ_FIELDS
+      "IDX_ENRONTGZ_FORMAT"     = var.IDX_ENRONTGZ_FORMAT
+      "IDX_ENRONTGZ_IDXNAME"    = var.IDX_ENRONTGZ_IDXNAME
+      "IDX_ENRONTGZ_SEPARATOR"  = var.IDX_ENRONTGZ_SEPARATOR
+      "IDX_ENRONTGZ_TERMINATOR" = var.IDX_ENRONTGZ_TERMINATOR
+      "IDX_ENRONTGZ_URLZINC"    = "http://${module.network.lb_dns_name}/api/"
+      "IDX_ENRONTGZ_TOKENZINC"  = base64encode("${var.ZINC_FIRST_ADMIN_USER}:${var.ZINC_FIRST_ADMIN_PASSWORD}")
     }
   }
 }
 
+resource "aws_lambda_permission" "allow_bucket" {
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.index_lambda_func.arn
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.this["${local.data_bucket_name}"].arn
+}
+
 resource "aws_s3_bucket_notification" "index_lambda_notify" {
-  bucket = aws_s3_bucket.this["${local.lambda_bucket_name}"].id
+  depends_on = [
+    aws_lambda_permission.allow_bucket
+  ]
+
+  bucket = aws_s3_bucket.this["${local.data_bucket_name}"].id
   lambda_function {
     lambda_function_arn = aws_lambda_function.index_lambda_func.arn
-    events              = ["s3:ObjectCreated:*", "s3:PutObject:*"]
+    events              = ["s3:ObjectCreated:Put"]
   }
 }
 #################
