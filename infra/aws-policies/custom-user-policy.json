@@ -131,7 +131,8 @@
                 "lambda:UpdateFunctionConfiguration",
                 "lambda:AddPermission",
                 "lambda:GetPolicy",
-                "lambda:RemovePermission"
+                "lambda:RemovePermission",
+                "lambda:UpdateFunctionCode"
             ],
             "Resource": "*"
         }
