@@ -28,26 +28,32 @@ jobs:
 
       - name: Build
         id: build
-        run: make clean install compile
+        run: |
+          echo "log<<EOF"  >> $GITHUB_OUTPUT
+          make clean install compile >> $GITHUB_OUTPUT
+          echo "EOF"  >> $GITHUB_OUTPUT
         working-directory: ./backend
         continue-on-error: true
 
       - name: Package
         id: package
-        run: make package
+        run: |
+          echo "log<<EOF"  >> $GITHUB_OUTPUT
+          make package >> $GITHUB_OUTPUT
+          echo "EOF"  >> $GITHUB_OUTPUT
         working-directory: ./backend
         continue-on-error: true
 
       - uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
         env:
-          BUILD: "terraform\n${{ steps.build.outputs.stdout }}"
-          PACKAGE: "terraform\n${{ steps.package.outputs.stdout }}"
+          BUILD: "Make build\n${{ steps.build.outputs.log }}"
+          PACKAGE: "Make package\n${{ steps.package.outputs.log }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Build ⚙️\`${{ steps.build.outcome }}\`
-            #### Package 📦\`${{ steps.init.outcome }}\`
+            #### Package 📦\`${{ steps.package.outcome }}\`
             <details><summary>Show details</summary>
 
             \`\`\`\n
@@ -79,5 +85,4 @@ jobs:
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: ${{ vars.AWS_REGION }}
           function_name: ${{ vars.AWS_LAMBDA_NAME }}
-          zip_file: build/main-linux-386/main.zip
-        working-directory: ./infra/src
+          zip_file: ./backend/build/main-linux-386/main.zip

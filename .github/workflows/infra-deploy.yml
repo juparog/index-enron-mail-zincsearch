@@ -32,7 +32,7 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
-          export TF_WORKSPACE="pdn"
+          export TF_WORKSPACE=pdn
           terraform init -input=false
         working-directory: ./infra/src
       
@@ -45,6 +45,7 @@ jobs:
         id: plan
         if: github.event_name == 'pull_request'
         run: |
+          export TF_WORKSPACE=pdn
           terraform plan \
           -no-color \
           -input=false
@@ -86,6 +87,7 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
+          export TF_WORKSPACE=pdn
           terraform apply \
           -auto-approve \
           -input=false
