@@ -2,6 +2,6 @@
 
 ### Cloud ###
 provider "aws" {
-  region = local.region
+  region = var.AWS_REGION
 }
 #############

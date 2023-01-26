@@ -25,6 +25,8 @@ const (
 )
 
 var wgRead sync.WaitGroup
+var wgWrite sync.WaitGroup
+var wgUpload sync.WaitGroup
 
 type InputParams struct {
 	Fields     *string
@@ -53,7 +55,8 @@ func ProcessFile(inputParams InputParams, done chan<- bool) {
 
 	writerChannel := make(chan map[string]string)
 
-	go writeFile(inputParams, writerChannel)
+	wgWrite.Add(1)
+	go writeFile(inputParams, writerChannel, &wgWrite)
 
 	for {
 		header, err := tr.Next()
@@ -79,6 +82,8 @@ func ProcessFile(inputParams InputParams, done chan<- bool) {
 
 	wgRead.Wait()
 	close(writerChannel)
+
+	wgWrite.Wait()
 
 	elapsed := time.Since(startTime)
 	logger.Info.Printf("🏁 Processing completed in %s\n", elapsed)
@@ -159,7 +164,9 @@ func processLine(line *string, separator *string, defaultF *string, fieldsMap *m
 	return
 }
 
-func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) {
+func writeFile(inputParams InputParams, writerChannel <-chan map[string]string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	logger.Info.Println("Writing files...")
 
 	writeBasePath := utils.GetBasePath(*inputParams.InputPath)
@@ -189,7 +196,8 @@ func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) 
 				writeStringFunc(afterIdxStr, true)
 				logger.Info.Printf("write complete: %s", tmpFilepath)
 
-				go uploadFile(tmpFilepath, inputParams, &filesUploading)
+				wgUpload.Add(1)
+				go uploadFile(tmpFilepath, inputParams, &filesUploading, &wgUpload)
 
 				for {
 					if (filesUploading * MAX_SIZE_PER_FILE) <= MAX_DISK_CAPACITY {
@@ -213,9 +221,12 @@ func writeFile(inputParams InputParams, writerChannel <-chan map[string]string) 
 	writeStringFunc(afterIdxStr, true)
 	logger.Info.Printf("write complete: %s", tmpFilepath)
 
-	go uploadFile(tmpFilepath, inputParams, &filesUploading)
+	wgUpload.Add(1)
+	go uploadFile(tmpFilepath, inputParams, &filesUploading, &wgUpload)
 
 	logger.Info.Println("Writing completed.")
+
+	wgUpload.Wait()
 }
 
 func createStringWriter(filePath string) func(string, bool) int64 {
@@ -240,7 +251,9 @@ func createStringWriter(filePath string) func(string, bool) int64 {
 	}
 }
 
-func uploadFile(filepath string, inputParams InputParams, filesUploading *int) {
+func uploadFile(filepath string, inputParams InputParams, filesUploading *int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	*filesUploading += 1
 	utils.CheckError(utils.CheckFileExist(filepath))
 
@@ -251,7 +264,8 @@ func uploadFile(filepath string, inputParams InputParams, filesUploading *int) {
 	buf.ReadFrom(file)
 
 	logger.Info.Printf("Uploading: %s\n", filepath)
-	targetUrl := *inputParams.UrlZinc + utils.GetUploadEndpoint(*inputParams.Format)
+	targetUrl := *inputParams.UrlZinc + "/" + utils.GetUploadEndpoint(*inputParams.Format)
+	logger.Debug.Printf("url: %s\n", targetUrl)
 	req, err := http.NewRequest("POST", targetUrl, buf)
 	utils.CheckError(err)
 
