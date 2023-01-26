@@ -13,6 +13,12 @@ variable "ZINC_FIRST_ADMIN_PASSWORD" {
 ################
 
 ## Optionals ###
+variable "ENV" {
+  description = "Enviroment name"
+  type        = string
+  default     = "dev"
+}
+
 variable "AWS_REGION" {
   description = "Aws region name"
   type        = string

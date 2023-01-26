@@ -3,24 +3,24 @@
 ### local definitions ###
 locals {
   # iam
-  task_role_name   = "indexEcsTaskExecutionRole"
-  lambda_role_name = "indexLambdaExecutionRole"
+  task_role_name   = "indexEcsTaskExecutionRole-${var.ENV}"
+  lambda_role_name = "indexLambdaExecutionRole-${var.ENV}"
 
   # nerwork
-  lb_name = "zinc-lb"
+  lb_name      = "zinc-lb-${var.ENV}"
+  zinc_tg_name = "zinc-tg-${var.ENV}"
 
   # ecs
-  cluster_name  = "zinc-cluster"
-  task_name     = "zinc-task"
+  cluster_name  = "zinc-cluster-${var.ENV}"
+  task_name     = "zinc-task-${var.ENV}"
   task_img_name = "public.ecr.aws/zinclabs/zinc:latest"
-  service_name  = "zinc-service"
+  service_name  = "zinc-service-${var.ENV}"
 
   # s3
-  data_bucket_name   = "enron-mail-data"
-  lambda_bucket_name = "enron-mail-lambda"
+  data_bucket_name = "enron-mail-data-${var.ENV}"
 
   # Lambda
-  lambda_name    = "indez-eron-email"
+  lambda_name    = "indez-eron-email-${var.ENV}"
   lambda_runtime = "go1.x"
   lambda_handler = "main"
 }
@@ -71,8 +71,9 @@ module "network" {
   ]
 
   # variables
-  region_name = var.AWS_REGION
-  lb_name     = local.lb_name
+  region_name       = var.AWS_REGION
+  lb_name           = local.lb_name
+  target_group_name = local.zinc_tg_name
 }
 
 module "ecs" {
@@ -100,15 +101,12 @@ module "ecs" {
 #####################
 
 ### resourcesc S3 ###
-resource "aws_s3_bucket" "this" {
-  for_each = toset(["${local.data_bucket_name}", "${local.lambda_bucket_name}"])
-  bucket   = each.value
+resource "aws_s3_bucket" "data_bucket_name" {
+  bucket = local.data_bucket_name
 }
 
 resource "aws_s3_bucket_acl" "this" {
-  for_each = aws_s3_bucket.this
-
-  bucket = each.value.id
+  bucket = aws_s3_bucket.data_bucket_name.id
   acl    = "private"
 }
 #################
@@ -142,7 +140,7 @@ resource "aws_lambda_permission" "allow_bucket" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.index_lambda_func.arn
   principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.this["${local.data_bucket_name}"].arn
+  source_arn    = aws_s3_bucket.data_bucket_name.arn
 }
 
 resource "aws_s3_bucket_notification" "index_lambda_notify" {
@@ -150,7 +148,7 @@ resource "aws_s3_bucket_notification" "index_lambda_notify" {
     aws_lambda_permission.allow_bucket
   ]
 
-  bucket = aws_s3_bucket.this["${local.data_bucket_name}"].id
+  bucket = aws_s3_bucket.data_bucket_name.id
   lambda_function {
     lambda_function_arn = aws_lambda_function.index_lambda_func.arn
     events              = ["s3:ObjectCreated:Put"]

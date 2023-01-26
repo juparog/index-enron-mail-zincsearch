@@ -47,8 +47,8 @@
                 "iam:PassRole"
             ],
             "Resource": [
-                "arn:aws:iam::*:role/indexEcsTaskExecutionRole",
-                "arn:aws:iam::*:role/indexLambdaExecutionRole"
+                "arn:aws:iam::*:role/indexEcsTaskExecutionRole-*",
+                "arn:aws:iam::*:role/indexLambdaExecutionRole-*"
             ]
         },
         {
