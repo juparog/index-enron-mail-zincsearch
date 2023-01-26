@@ -46,7 +46,7 @@ resource "aws_alb" "this" {
 }
 
 resource "aws_lb_target_group" "this" {
-  name        = "target-group"
+  name        = var.target_group_name
   port        = 80
   protocol    = "HTTP"
   target_type = "ip"

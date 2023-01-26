@@ -1,0 +1,83 @@
+name: 'Lambda Go deploy'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  terraform:
+    name: "Build, package and lambda deploy"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.19.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Build
+        id: build
+        run: make clean install compile
+        working-directory: ./backend
+        continue-on-error: true
+
+      - name: Package
+        id: package
+        run: make package
+        working-directory: ./backend
+        continue-on-error: true
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          BUILD: "terraform\n${{ steps.build.outputs.stdout }}"
+          PACKAGE: "terraform\n${{ steps.package.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Build ⚙️\`${{ steps.build.outcome }}\`
+            #### Package 📦\`${{ steps.init.outcome }}\`
+            <details><summary>Show details</summary>
+
+            \`\`\`\n
+            ${process.env.BUILD}
+            ----------------------
+            ${process.env.PACKAGE}
+            \`\`\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Build and Package Status
+        if: steps.build.outcome == 'failure' || steps.package.outcome == 'failure'
+        run: exit 1
+
+      - name: Deploy
+        uses: appleboy/lambda-action@master
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          function_name: ${{ vars.AWS_LAMBDA_NAME }}
+          zip_file: build/main-linux-386/main.zip
+        working-directory: ./infra/src
