@@ -77,12 +77,19 @@ jobs:
         if: steps.build.outcome == 'failure' || steps.package.outcome == 'failure'
         run: exit 1
 
-      - name: Deploy
-        uses: appleboy/lambda-action@master
+      - name: Aws Cli Setup
+        uses: unfor19/install-aws-cli-action@master
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: ${{ vars.AWS_REGION }}
-          function_name: ${{ vars.AWS_LAMBDA_NAME }}
-          zip_file: ./backend/build/main-linux-386/main.zip
+          version: 2.9.8
+
+      - name: Deploy lambda code
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          aws lambda update-function-code \
+          --function-name="${{ vars.AWS_LAMBDA_NAME }}" \
+          --zip-file="fileb://backend/build/main-linux-386/main.zip

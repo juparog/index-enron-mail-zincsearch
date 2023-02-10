@@ -1,0 +1,22 @@
+# npm
+node_modules
+npm-debug.log
+
+# builds
+dist/
+
+# docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# git
+.git
+.gitignore
+
+# project
+README.md
+LICENSE
+
+# vscode
+.vscode

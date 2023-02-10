@@ -18,3 +18,4 @@ build/*
 # vendor/
 test/*
 !test/enron_mail.tgz
+!test/enron_mail.json
